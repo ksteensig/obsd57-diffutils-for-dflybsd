@@ -36,7 +36,7 @@
 
 /* A single diff line. */
 struct diffline {
-	SIMPLEQ_ENTRY(diffline) diffentries;
+	STAILQ_ENTRY(diffline) diffentries;
 	char	*left;
 	char	 div;
 	char	*right;
@@ -55,10 +55,10 @@ static void printd(FILE *, size_t);
 static void println(const char *, const char, const char *);
 static void processq(void);
 static void prompt(const char *, const char *);
-__dead static void usage(void);
+__attribute__((noreturn)) static void usage(void);
 static char *xfgets(FILE *);
 
-SIMPLEQ_HEAD(, diffline) diffhead = SIMPLEQ_HEAD_INITIALIZER(diffhead);
+STAILQ_HEAD(, diffline) diffhead = STAILQ_HEAD_INITIALIZER(diffhead);
 size_t	 line_width;	/* width of a line (two columns and divider) */
 size_t	 width;		/* width of each column */
 size_t	 file1ln, file2ln;	/* line number of file1 and file2 */
@@ -765,7 +765,7 @@ enqueue(char *left, char div, char *right)
 	diffp->left = left;
 	diffp->div = div;
 	diffp->right = right;
-	SIMPLEQ_INSERT_TAIL(&diffhead, diffp, diffentries);
+	STAILQ_INSERT_TAIL(&diffhead, diffp, diffentries);
 }
 
 /*
@@ -856,11 +856,11 @@ processq(void)
 	char divc, *left, *right;
 
 	/* Don't process empty queue. */
-	if (SIMPLEQ_EMPTY(&diffhead))
+	if (STAILQ_EMPTY(&diffhead))
 		return;
 
 	/* Remember the divider. */
-	divc = SIMPLEQ_FIRST(&diffhead)->div;
+	divc = STAILQ_FIRST(&diffhead)->div;
 
 	left = NULL;
 	right = NULL;
@@ -868,7 +868,7 @@ processq(void)
 	 * Go through set of diffs, concatenating each line in left or
 	 * right column into two long strings, `left' and `right'.
 	 */
-	SIMPLEQ_FOREACH(diffp, &diffhead, diffentries) {
+	STAILQ_FOREACH(diffp, &diffhead, diffentries) {
 		/*
 		 * Print changed lines if -s was given,
 		 * print all lines if -s was not given.
@@ -885,9 +885,9 @@ processq(void)
 	}
 
 	/* Empty queue and free each diff line and its elements. */
-	while (!SIMPLEQ_EMPTY(&diffhead)) {
-		diffp = SIMPLEQ_FIRST(&diffhead);
-		SIMPLEQ_REMOVE_HEAD(&diffhead, diffentries);
+	while (!STAILQ_EMPTY(&diffhead)) {
+		diffp = STAILQ_FIRST(&diffhead);
+		STAILQ_REMOVE_HEAD(&diffhead, diffentries);
 		freediff(diffp);
 	}
 
@@ -934,10 +934,10 @@ static void
 printc(FILE *file1, size_t file1end, FILE *file2, size_t file2end)
 {
 	struct fileline {
-		SIMPLEQ_ENTRY(fileline)	 fileentries;
+		STAILQ_ENTRY(fileline)	 fileentries;
 		char			*line;
 	};
-	SIMPLEQ_HEAD(, fileline) delqhead = SIMPLEQ_HEAD_INITIALIZER(delqhead);
+	STAILQ_HEAD(, fileline) delqhead = STAILQ_HEAD_INITIALIZER(delqhead);
 
 	/* Read lines to be deleted. */
 	for (; file1ln <= file1end; ++file1ln) {
@@ -952,11 +952,11 @@ printc(FILE *file1, size_t file1end, FILE *file2, size_t file2end)
 		if (!(linep = malloc(sizeof(struct fileline))))
 			err(2, "printc");
 		linep->line = line1;
-		SIMPLEQ_INSERT_TAIL(&delqhead, linep, fileentries);
+		STAILQ_INSERT_TAIL(&delqhead, linep, fileentries);
 	}
 
 	/* Process changed lines.. */
-	for (; !SIMPLEQ_EMPTY(&delqhead) && file2ln <= file2end;
+	for (; !STAILQ_EMPTY(&delqhead) && file2ln <= file2end;
 	    ++file2ln) {
 		struct fileline *del;
 		char *add;
@@ -965,9 +965,9 @@ printc(FILE *file1, size_t file1end, FILE *file2, size_t file2end)
 		if (!(add = xfgets(file2)))
 			errx(2, "error reading add in change");
 
-		del = SIMPLEQ_FIRST(&delqhead);
+		del = STAILQ_FIRST(&delqhead);
 		enqueue(del->line, '|', add);
-		SIMPLEQ_REMOVE_HEAD(&delqhead, fileentries);
+		STAILQ_REMOVE_HEAD(&delqhead, fileentries);
 		/*
 		 * Free fileline structure but not its elements since
 		 * they are queued up.
@@ -989,12 +989,12 @@ printc(FILE *file1, size_t file1end, FILE *file2, size_t file2end)
 	processq();
 
 	/* Process remaining lines to delete. */
-	while (!SIMPLEQ_EMPTY(&delqhead)) {
+	while (!STAILQ_EMPTY(&delqhead)) {
 		struct fileline *filep;
 
-		filep = SIMPLEQ_FIRST(&delqhead);
+		filep = STAILQ_FIRST(&delqhead);
 		enqueue(filep->line, '<', NULL);
-		SIMPLEQ_REMOVE_HEAD(&delqhead, fileentries);
+		STAILQ_REMOVE_HEAD(&delqhead, fileentries);
 		free(filep);
 	}
 	processq();

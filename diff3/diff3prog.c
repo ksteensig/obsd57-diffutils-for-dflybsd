@@ -135,10 +135,10 @@ void merge(int, int);
 void prange(struct range *);
 void repos(int);
 void separate(const char *);
-__dead void edscript(int);
-__dead void trouble(void);
+__attribute__((noreturn)) void edscript(int);
+__attribute__((noreturn)) void trouble(void);
 void increase(void);
-__dead void usage(void);
+__attribute__((noreturn)) void usage(void);
 
 int
 main(int argc, char **argv)
@@ -508,7 +508,7 @@ repos(int nchar)
 		(void)fseek(fp[i], (long)-nchar, SEEK_CUR);
 }
 
-__dead void
+__attribute__((noreturn)) void
 trouble(void)
 {
 	errx(EXIT_FAILURE, "logic error");
@@ -534,7 +534,7 @@ edit(struct diff *diff, int dup, int j)
 }
 
 /* regurgitate */
-__dead void
+__attribute__((noreturn)) void
 edscript(int n)
 {
 	int j,k;
@@ -573,22 +573,22 @@ increase(void)
 	newsz = szchanges == 0 ? 64 : 2 * szchanges;
 	incr = newsz - szchanges;
 
-	p = reallocarray(d13, newsz, sizeof(struct diff));
+	p = realloc(d13, newsz * sizeof(struct diff));
 	if (p == NULL)
 		err(1, NULL);
 	memset(p + szchanges, 0, incr * sizeof(struct diff));
 	d13 = p;
-	p = reallocarray(d23, newsz, sizeof(struct diff));
+	p = realloc(d23, newsz * sizeof(struct diff));
 	if (p == NULL)
 		err(1, NULL);
 	memset(p + szchanges, 0, incr * sizeof(struct diff));
 	d23 = p;
-	p = reallocarray(de, newsz, sizeof(struct diff));
+	p = realloc(de, newsz * sizeof(struct diff));
 	if (p == NULL)
 		err(1, NULL);
 	memset(p + szchanges, 0, incr * sizeof(struct diff));
 	de = p;
-	q = reallocarray(overlap, newsz, sizeof(char));
+	q = realloc(overlap, newsz * sizeof(char));
 	if (q == NULL)
 		err(1, NULL);
 	memset(q + szchanges, 0, incr * sizeof(char));
@@ -597,7 +597,7 @@ increase(void)
 }
 
 
-__dead void
+__attribute__((noreturn)) void
 usage(void)
 {
 	extern char *__progname;

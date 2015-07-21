@@ -2,7 +2,7 @@
 
 PROG=sdiff
 SRCS=common.c edit.c sdiff.c
-COPTS+=-Wall -W
+COPTS+=-Werror
 
 LDADD+=	-lutil
 DPADD+=	${LIBUTIL}
